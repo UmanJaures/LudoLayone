@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ludo_Layone - Mode en Ligne</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;500;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            overflow-x: hidden;
+            background: #0a0e27;
+            min-height: 100vh;
+            position: relative;
+            color: #fff;
+        }
+
+        /* Arrière-plan animé avec énergie esport */
+        .background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+            background: radial-gradient(ellipse at top, #1a1f3a 0%, #0a0e27 50%, #000000 100%);
+        }
+
+        /* Lignes néon animées style esport */
+        .neon-lines {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            opacity: 0.15;
+        }
+
+        .line {
+            position: absolute;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--color), transparent);
+            animation: slideLines 8s linear infinite;
+        }
+
+        /* Grille hexagonale style tech */
+        .hex-grid {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            opacity: 0.08;
+        }
+
+        .hex {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border: 1px solid;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+        }
+
+        /* Particules énergétiques */
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(1px);
+            animation: floatParticle 6s ease-in-out infinite;
+        }
+
+        /* Container principal */
+        .main-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header avec navigation - VERSION CORRIGÉE */
+        .header {
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            margin-bottom: 40px;
+            gap: 20px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-shrink: 0;
+        }
+
+        .logo-icon {
+            font-size: clamp(2rem, 5vw, 2.5rem);
+            animation: pulse 2s infinite;
+            filter: drop-shadow(0 0 10px rgba(0, 255, 136, 0.5));
+        }
+
+        .logo-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(1.2rem, 4vw, 2.5rem);
+            font-weight: 900;
+            background: linear-gradient(135deg, #00ff88 0%, #00d4ff 50%, #7b2ff7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            filter: drop-shadow(0 0 15px rgba(0, 255, 136, 0.5));
+            letter-spacing: 2px;
+            white-space: nowrap;
+        }
+
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: clamp(8px, 2vw, 10px) clamp(15px, 3vw, 20px);
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #b8c5d6;
+            text-decoration: none;
+            border-radius: 30px;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+            font-size: clamp(0.8rem, 2vw, 1rem);
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Section de sélection du mode */
+        .selection-section {
+            text-align: center;
+            max-width: 1000px;
+            width: 100%;
+            padding: 40px 20px;
+        }
+
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(1.8rem, 5vw, 3.5rem);
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #00ff88 0%, #00d4ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .section-subtitle {
+            font-size: clamp(1rem, 2.5vw, 1.2rem);
+            color: #b8c5d6;
+            margin-bottom: 50px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Grille des modes de jeu */
+        .modes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            margin-bottom: 50px;
+        }
+
+        .mode-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 40px 30px;
+            text-align: center;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(5px);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 350px;
+        }
+
+        .mode-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #00ff88, #00d4ff);
+        }
+
+        .mode-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .mode-icon {
+            font-size: clamp(3rem, 8vw, 4rem);
+            margin-bottom: 20px;
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5));
+        }
+
+        .mode-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(1.5rem, 4vw, 1.8rem);
+            margin-bottom: 15px;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .mode-button {
+            display: inline-block;
+            padding: clamp(10px, 2vw, 12px) clamp(20px, 3vw, 30px);
+            background: transparent;
+            border: 2px solid #00ff88;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 30px;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 600;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+            width: 100%;
+            text-align: center;
+            margin-top: 20px;
+            font-size: clamp(0.9rem, 2vw, 1rem);
+        }
+
+        .mode-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 136, 0.2), transparent);
+            transition: all 0.6s;
+        }
+
+        .mode-button:hover {
+            background-color: #00ff88;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.7);
+            transform: translateY(-3px);
+        }
+
+        .mode-button:hover::before {
+            left: 100%;
+        }
+
+        /* Pions style gaming */
+        .floating-pieces {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .game-piece {
+            position: absolute;
+            width: clamp(40px, 5vw, 70px);
+            height: clamp(40px, 5vw, 70px);
+            border-radius: 50%;
+            border: 2px solid;
+            box-shadow: 
+                0 0 20px currentColor,
+                inset 0 0 10px currentColor;
+            animation: floatPiece 8s ease-in-out infinite;
+        }
+
+        .piece-red {
+            background: radial-gradient(circle at 30% 30%, rgba(255, 59, 92, 0.4), rgba(139, 0, 0, 0.8));
+            border-color: #ff3b5c;
+            color: #ff3b5c;
+            top: 15%;
+            left: 8%;
+            animation-delay: 0s;
+        }
+
+        .piece-green {
+            background: radial-gradient(circle at 30% 30%, rgba(0, 255, 136, 0.4), rgba(0, 100, 0, 0.8));
+            border-color: #00ff88;
+            color: #00ff88;
+            top: 20%;
+            right: 10%;
+            animation-delay: 2s;
+        }
+
+        .piece-blue {
+            background: radial-gradient(circle at 30% 30%, rgba(0, 212, 255, 0.4), rgba(0, 0, 139, 0.8));
+            border-color: #00d4ff;
+            color: #00d4ff;
+            bottom: 20%;
+            left: 10%;
+            animation-delay: 4s;
+        }
+
+        .piece-yellow {
+            background: radial-gradient(circle at 30% 30%, rgba(255, 215, 0, 0.4), rgba(139, 128, 0, 0.8));
+            border-color: #ffd700;
+            color: #ffd700;
+            bottom: 15%;
+            right: 12%;
+            animation-delay: 6s;
+        }
+
+        /* Coins avec effets tech */
+        .corner-accent {
+            position: fixed;
+            width: clamp(100px, 15vw, 200px);
+            height: clamp(100px, 15vw, 200px);
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .corner-top-left {
+            top: 0;
+            left: 0;
+            border-top: 3px solid #00ff88;
+            border-left: 3px solid #00ff88;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+        }
+
+        .corner-top-right {
+            top: 0;
+            right: 0;
+            border-top: 3px solid #00d4ff;
+            border-right: 3px solid #00d4ff;
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+        }
+
+        .corner-bottom-left {
+            bottom: 0;
+            left: 0;
+            border-bottom: 3px solid #ff006e;
+            border-left: 3px solid #ff006e;
+            box-shadow: 0 0 20px rgba(255, 0, 110, 0.3);
+        }
+
+        .corner-bottom-right {
+            bottom: 0;
+            right: 0;
+            border-bottom: 3px solid #7b2ff7;
+            border-right: 3px solid #7b2ff7;
+            box-shadow: 0 0 20px rgba(123, 47, 247, 0.3);
+        }
+
+        /* Footer style tech */
+        footer {
+            width: 100%;
+            text-align: center;
+            color: rgba(184, 197, 214, 0.6);
+            font-size: clamp(0.75rem, 1.5vw, 1rem);
+            font-weight: 300;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            padding: 20px 0;
+            margin-top: 40px;
+        }
+
+        /* Animations */
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes floatParticle {
+            0%, 100% {
+                transform: translate(0, 0);
+                opacity: 0.6;
+            }
+            25% {
+                transform: translate(30px, -40px);
+                opacity: 1;
+            }
+            50% {
+                transform: translate(-20px, -30px);
+                opacity: 0.8;
+            }
+            75% {
+                transform: translate(40px, -50px);
+                opacity: 0.9;
+            }
+        }
+
+        @keyframes floatPiece {
+            0%, 100% {
+                transform: translateY(0) rotate(0deg);
+            }
+            25% {
+                transform: translateY(-30px) rotate(90deg);
+            }
+            50% {
+                transform: translateY(-15px) rotate(180deg);
+            }
+            75% {
+                transform: translateY(-35px) rotate(270deg);
+            }
+        }
+
+        @keyframes slideLines {
+            from {
+                transform: translateX(-100%);
+            }
+            to {
+                transform: translateX(100%);
+            }
+        }
+
+        /* Media Queries - RESPONSIVE HEADER CORRIGÉ */
+        
+        /* Très petits écrans - Smartphones en portrait */
+        @media (max-width: 480px) {
+            .header {
+                flex-direction: column;
+                text-align: center;
+                gap: 15px;
+                margin-bottom: 30px;
+            }
+            
+            .logo {
+                justify-content: center;
+            }
+            
+            .logo-text {
+                white-space: normal;
+                word-break: break-word;
+            }
+            
+            .back-button {
+                width: 100%;
+                max-width: 200px;
+                justify-content: center;
+            }
+        }
+
+        /* Smartphones standard */
+        @media (min-width: 481px) and (max-width: 768px) {
+            .header {
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 20px;
+            }
+            
+            .logo {
+                flex: 1;
+                min-width: 200px;
+                justify-content: center;
+            }
+            
+            .back-button {
+                flex-shrink: 0;
+            }
+        }
+
+        /* Tablettes */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .header {
+                gap: 30px;
+            }
+        }
+
+        /* Écrans plus larges */
+        @media (min-width: 1025px) {
+            .header {
+                gap: 40px;
+            }
+        }
+
+        /* Orientation paysage pour mobiles */
+        @media (max-height: 500px) and (orientation: landscape) {
+            .header {
+                margin-bottom: 20px;
+            }
+            
+            .logo-icon {
+                font-size: 1.8rem;
+            }
+            
+            .logo-text {
+                font-size: 1.5rem;
+            }
+            
+            .back-button {
+                padding: 6px 15px;
+                font-size: 0.8rem;
+            }
+        }
+
+        /* Mode sombre forcé */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: #000000;
+            }
+        }
+
+        /* Réduction du mouvement pour accessibilité */
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        /* Support pour le contraste élevé */
+        @media (prefers-contrast: high) {
+            .mode-card {
+                border: 2px solid #fff;
+            }
+            
+            .mode-button {
+                border: 3px solid #00ff88;
+            }
+            
+            .back-button {
+                border: 2px solid #fff;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Arrière-plan animé -->
+    <div class="background">
+        <div class="neon-lines" id="neonLines"></div>
+        <div class="hex-grid" id="hexGrid"></div>
+    </div>
+
+    <!-- Accents de coins style tech -->
+    <div class="corner-accent corner-top-left"></div>
+    <div class="corner-accent corner-top-right"></div>
+    <div class="corner-accent corner-bottom-left"></div>
+    <div class="corner-accent corner-bottom-right"></div>
+
+    <!-- Pions flottants -->
+    <div class="floating-pieces">
+        <div class="game-piece piece-red"></div>
+        <div class="game-piece piece-green"></div>
+        <div class="game-piece piece-blue"></div>
+        <div class="game-piece piece-yellow"></div>
+    </div>
+
+    <!-- Container principal -->
+    <div class="main-container">
+        <!-- Header avec navigation - VERSION RESPONSIVE CORRIGÉE -->
+        <div class="header">
+            <div class="logo">
+                <div class="logo-icon">🎲</div>
+                <h1 class="logo-text">LUDO_LAYONE</h1>
+            </div>
+            <a href="page.html" class="back-button">
+                <span>←</span> Retour à l'accueil
+            </a>
+        </div>
+
+        <!-- Section de sélection du mode -->
+        <section class="selection-section">
+            <h2 class="section-title">JOUER EN LIGNE</h2>
+            <p class="section-subtitle">Affrontez des joueurs du monde entier. Choisissez votre mode de jeu et entrez dans l'arène !</p>
+            
+            <div class="modes-grid">
+                <!-- Mode 2 joueurs -->
+                <div class="mode-card">
+                    <div class="mode-icon">👥</div>
+                    <h3 class="mode-title">2 Joueurs</h3>
+                    <a href="http://localhost:3000/v2" class="mode-button">Jouer à 2</a>
+                </div>
+                
+                <!-- Mode 3 joueurs -->
+                <div class="mode-card">
+                    <div class="mode-icon">👥👥</div>
+                    <h3 class="mode-title">3 Joueurs</h3>
+                    <a href="http://localhost:3000/v3" class="mode-button">Jouer à 3</a>
+                </div>
+                
+                <!-- Mode 4 joueurs -->
+                <div class="mode-card">
+                    <div class="mode-icon">👥👥👥👥</div>
+                    <h3 class="mode-title">4 Joueurs</h3>
+                    <a href="http://localhost:3000/v4" class="mode-button">Jouer à 4</a>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Footer -->
+        <footer>
+            © 2025 Ludo_Layone — Tous droits réservés
+        </footer>
+    </div>
+
+    <script>
+        // Génération des lignes néon animées
+        const neonLines = document.getElementById('neonLines');
+        const lineColors = ['#00ff88', '#00d4ff', '#7b2ff7', '#ff006e'];
+        
+        for (let i = 0; i < 8; i++) {
+            const line = document.createElement('div');
+            line.className = 'line';
+            line.style.top = `${Math.random() * 100}%`;
+            line.style.width = `${Math.random() * 300 + 200}px`;
+            line.style.setProperty('--color', lineColors[Math.floor(Math.random() * lineColors.length)]);
+            line.style.animationDelay = `${Math.random() * 8}s`;
+            line.style.animationDuration = `${Math.random() * 5 + 6}s`;
+            neonLines.appendChild(line);
+        }
+
+        // Génération de la grille hexagonale
+        const hexGrid = document.getElementById('hexGrid');
+        const hexColors = ['#00ff88', '#00d4ff', '#7b2ff7', '#ff006e'];
+        
+        for (let i = 0; i < 15; i++) {
+            const hex = document.createElement('div');
+            hex.className = 'hex';
+            hex.style.top = `${Math.random() * 100}%`;
+            hex.style.left = `${Math.random() * 100}%`;
+            hex.style.borderColor = hexColors[Math.floor(Math.random() * hexColors.length)];
+            hex.style.transform = `rotate(${Math.random() * 360}deg)`;
+            hexGrid.appendChild(hex);
+        }
+
+        // Génération de particules énergétiques
+        const background = document.querySelector('.background');
+        const particleColors = ['#00ff88', '#00d4ff', '#7b2ff7', '#ff006e'];
+        
+        for (let i = 0; i < 25; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            const size = Math.random() * 8 + 3;
+            particle.style.width = `${size}px`;
+            particle.style.height = `${size}px`;
+            particle.style.background = particleColors[Math.floor(Math.random() * particleColors.length)];
+            particle.style.boxShadow = `0 0 ${size * 2}px currentColor`;
+            particle.style.top = `${Math.random() * 100}%`;
+            particle.style.left = `${Math.random() * 100}%`;
+            particle.style.animationDelay = `${Math.random() * 6}s`;
+            particle.style.animationDuration = `${Math.random() * 4 + 5}s`;
+            background.appendChild(particle);
+        }
+
+        // Effet parallaxe au mouvement de la souris (optimisé)
+        let mouseX = 0;
+        let mouseY = 0;
+        let currentX = 0;
+        let currentY = 0;
+
+        document.addEventListener('mousemove', (e) => {
+            mouseX = (e.clientX / window.innerWidth - 0.5) * 30;
+            mouseY = (e.clientY / window.innerHeight - 0.5) * 30;
+        });
+
+        function animateParallax() {
+            currentX += (mouseX - currentX) * 0.1;
+            currentY += (mouseY - currentY) * 0.1;
+            
+            document.querySelectorAll('.game-piece').forEach((piece, index) => {
+                const speed = (index + 1) * 0.3;
+                piece.style.transform = `translate(${currentX * speed}px, ${currentY * speed}px)`;
+            });
+            
+            requestAnimationFrame(animateParallax);
+        }
+        animateParallax();
+
+        // Animation des boutons au clic
+        document.querySelectorAll('.mode-button').forEach(button => {
+            button.addEventListener('click', (e) => {
+                button.style.transform = 'translateY(-3px) scale(0.98)';
+                setTimeout(() => {
+                    button.style.transform = '';
+                }, 150);
+            });
+        });
+
+        // Effet de particules au survol des cartes
+        document.querySelectorAll('.mode-card').forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.filter = 'brightness(1.1)';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.filter = '';
+            });
+        });
+    </script>
+</body>
+</html>

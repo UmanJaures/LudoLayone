@@ -1,0 +1,160 @@
+# ================================= #
+# ENVIRONMENT & CONFIGURATION       #
+# ================================= #
+
+# Environment variables - CRITIQUE !
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+*.env
+
+# Configuration locale
+config.local.js
+config.local.json
+*.local.*
+
+# ================================= #
+# DEPENDENCIES & PACKAGES           #
+# ================================= #
+
+# Node.js dependencies
+node_modules/
+*/node_modules/
+**/node_modules/
+
+# Package locks (vous pouvez les versionner ou non)
+# package-lock.json
+# yarn.lock
+
+# ================================= #
+# CERTIFICATS SSL                   #
+# ================================= #
+
+# Certificats SSL (ne jamais versionner !)
+certs/
+*.pem
+*.key
+*.crt
+*.csr
+*.pfx
+*.p12
+
+# ================================= #
+# IDE & EDITOR FILES                #
+# ================================= #
+
+# VS Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# Other IDEs
+.idea/
+*.swp
+*.swo
+*~
+._*
+
+# ================================= #
+# OPERATING SYSTEM FILES            #
+# ================================= #
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+.directory
+*~
+
+# ================================= #
+# LOGS & TEMPORARY FILES            #
+# ================================= #
+
+# Log files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+loglevel
+logs/
+*.logs
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory
+coverage/
+.nyc_output/
+
+# Temporary folders
+tmp/
+temp/
+*.tmp
+*.temp
+.cache/
+
+# ================================= #
+# SERVER-SPECIFIC FILES             #
+# ================================= #
+
+# Socket.io temporary files
+.socket.io/
+
+# Session files
+*.session
+sessions/
+
+# Game cache
+game-sessions/
+*.gamecache
+
+# ================================= #
+# BUILD & OUTPUT DIRECTORIES        #
+# ================================= #
+
+# Build directories
+dist/
+build/
+out/
+*.tsbuildinfo
+
+# Distribution files
+*.tar.gz
+*.zip
+
+# ================================= #
+# BACKUP & TEMP FILES               #
+# ================================= #
+
+# Backup files
+*.backup
+*.bak
+~$*
+
+# Database files (pour le futur)
+*.db
+*.sqlite
+*.sqlite3
+
+# ================================= #
+# CLIENT-SIDE CACHE                 #
+# ================================= #
+
+# Browser cache files
+*.br
+*.gz

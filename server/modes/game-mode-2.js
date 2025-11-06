@@ -1,0 +1,156 @@
+/**
+ * Mode de jeu pour 2 joueurs
+ */
+
+import { BASE_POSITIONS, HOME_POSITIONS, HOME_ENTRANCE, SAFE_POSITIONS } from '../constants/constants-2.js';
+
+export class GameMode2 {
+    static TOTAL_PLAYERS = 2;
+    static PLAYERS = ['P1', 'P2'];
+
+    /**
+     * Vérifier si une position permet la capture
+     */
+    static canCaptureAtPosition(position, capturingPlayer) {
+        if (SAFE_POSITIONS.includes(position)) {
+            return false;
+        }
+        
+        if (BASE_POSITIONS.P1.includes(position) || BASE_POSITIONS.P2.includes(position)) {
+            return false;
+        }
+        
+        if (HOME_ENTRANCE.P1.includes(position) || HOME_ENTRANCE.P2.includes(position)) {
+            return false;
+        }
+        
+        if (position === HOME_POSITIONS.P1 || position === HOME_POSITIONS.P2) {
+            return false;
+        }
+        
+        return true;
+    }
+
+    /**
+     * Vérifier et gérer les captures
+     */
+    static checkAndHandleCapture(game, movingPlayer, newPosition) {
+        const adversary = movingPlayer === 'P1' ? 'P2' : 'P1';
+        let capturedPiece = null;
+
+        if (!this.canCaptureAtPosition(newPosition, movingPlayer)) {
+            return null;
+        }
+
+        for (let piece = 0; piece < 4; piece++) {
+            if (game.positions[adversary][piece] === newPosition) {
+                capturedPiece = { 
+                    player: adversary, 
+                    piece: piece,
+                    fromPosition: newPosition,
+                    toPosition: BASE_POSITIONS[adversary][piece]
+                };
+                
+                console.log('CAPTURE', 'Piece captured', {
+                    capturingPlayer: movingPlayer,
+                    capturedPlayer: adversary,
+                    capturedPiece: piece,
+                    position: newPosition
+                });
+                
+                game.positions[adversary][piece] = BASE_POSITIONS[adversary][piece];
+                break;
+            }
+        }
+
+        return capturedPiece;
+    }
+
+    /**
+     * Vérifier si un joueur a gagné
+     */
+    static checkWinner(game, player) {
+        const allInHome = [0, 1, 2, 3].every(piece =>
+            game.positions[player][piece] === HOME_POSITIONS[player]
+        );
+
+        if (allInHome) {
+            game.state = 'finished';
+            console.log('GAME', 'Game finished', { gameId: game.id, winner: player });
+            return player;
+        }
+
+        return null;
+    }
+
+    /**
+     * Obtenir le prochain joueur - CORRIGÉ POUR GÉRER LES JOUEURS INACTIFS
+     */
+    static getNextPlayer(currentPlayer, diceValue, hasMoved, activePlayers = null) {
+        console.log('GameMode2.getNextPlayer called:', { 
+            currentPlayer, 
+            diceValue, 
+            hasMoved, 
+            activePlayers 
+        });
+
+        // ✅ CORRECTION : Rejoue seulement si 6 ET a bougé
+        if (diceValue === 6 && hasMoved) {
+            console.log('Player gets another turn (rolled 6 and moved)');
+            return currentPlayer;
+        }
+        
+        // ✅ CORRECTION CRITIQUE : Si on a la liste des joueurs actifs, l'utiliser
+        // Sinon, utiliser tous les joueurs par défaut
+        const availablePlayers = activePlayers || this.PLAYERS;
+        
+        const currentIndex = availablePlayers.indexOf(currentPlayer);
+        
+        // ✅ CORRECTION : Si le joueur actuel n'est pas dans la liste (a quitté), commencer au début
+        let nextIndex;
+        if (currentIndex === -1) {
+            nextIndex = 0;
+            console.log('Current player not in active list, starting from first player');
+        } else {
+            nextIndex = (currentIndex + 1) % availablePlayers.length;
+        }
+        
+        const nextPlayer = availablePlayers[nextIndex];
+        
+        console.log('Turn passed to next player:', { 
+            from: currentPlayer, 
+            to: nextPlayer,
+            currentIndex,
+            nextIndex,
+            availablePlayers
+        });
+        
+        return nextPlayer;
+    }
+
+    /**
+     * Initialiser les positions
+     */
+    static initializePositions() {
+        return {
+            P1: [...BASE_POSITIONS.P1],
+            P2: [...BASE_POSITIONS.P2]
+        };
+    }
+
+    /**
+     * Valider si un joueur peut rejoindre
+     */
+    static canPlayerJoin(game) {
+        return game.players.length < this.TOTAL_PLAYERS;
+    }
+
+    /**
+     * Attribuer un rôle à un nouveau joueur
+     */
+    static assignPlayerRole(game) {
+        const usedRoles = game.players.map(p => p.role);
+        const availableRole = this.PLAYERS.find(role => !usedRoles.includes(role));
+        return availableRole;
+    }
+}
