@@ -1,21 +1,31 @@
 /**
  * OnlineManager - Gère la connexion Socket.io avec le serveur
- * ADAPTÉ POUR 4 JOUEURS AVEC GAME MODE
+ * VERSION 4 JOUEURS - CORRIGÉE POUR LA PRODUCTION
  */
 
 import { io } from 'https://cdn.socket.io/4.7.5/socket.io.esm.min.js';
 
 export class OnlineManager {
     constructor() {
-        this.socket = io();
+        // ✅ CORRECTION : URL dynamique pour production
+        const socketUrl = window.location.origin;
+        this.socket = io(socketUrl, {
+            timeout: 10000,
+            reconnectionAttempts: 5,
+            reconnectionDelay: 1000
+        });
+        
         this.gameId = null;
         this.playerId = null;
         this.isSpectator = false;
+        
+        console.log(`🎮 OnlineManager V4 - URL: ${socketUrl}`);
         this.setupSocketListeners();
     }
 
     setPlayerId(playerId) {
         this.playerId = playerId;
+        console.log(`👤 Player ID défini: ${playerId}`);
     }
 
     getPlayerId() {
@@ -24,6 +34,7 @@ export class OnlineManager {
 
     setGameId(gameId) {
         this.gameId = gameId;
+        console.log(`🎯 Game ID défini: ${gameId}`);
     }
 
     getGameId() {
@@ -36,6 +47,7 @@ export class OnlineManager {
 
     setIsSpectator(isSpectator) {
         this.isSpectator = isSpectator;
+        console.log(`👁️ Mode spectateur: ${isSpectator}`);
     }
 
     getIsSpectator() {
@@ -43,37 +55,41 @@ export class OnlineManager {
     }
 
     createGame(playerName) {
-        // ✅ MODIFICATION : Envoyer le gameMode 4
+        // ✅ VERSION 4 JOUEURS
         this.socket.emit('create-game', { playerName, gameMode: 4 });
+        console.log(`🔄 Création partie V4 - Joueur: ${playerName}`);
     }
 
     joinGame(gameId, playerName) {
         this.socket.emit('join-game', { gameId, playerName });
-        // Le rôle sera attribué par le serveur en fonction des joueurs disponibles
         this.setGameId(gameId);
+        console.log(`🔗 Rejoindre partie V4: ${gameId} - Joueur: ${playerName}`);
     }
 
     watchGame(gameId, spectatorName) {
         this.socket.emit('watch-game', { gameId, spectatorName });
         this.setIsSpectator(true);
         this.setGameId(gameId);
+        console.log(`👁️ Spectateur V4: ${spectatorName}`);
     }
 
     sendDiceRoll() {
         if (!this.gameId) {
-            console.error('Cannot send dice: gameId missing');
+            console.error('❌ Cannot send dice: gameId missing');
             return;
         }
         
+        console.log(`🎲 Lancer dé V4 - Partie: ${this.gameId}`);
         this.socket.emit('roll-dice', this.gameId);
     }
 
     sendPieceMove(player, piece, newPosition, oldPosition, captured = false) {
         if (!this.gameId) {
-            console.error('Cannot send move: gameId missing');
+            console.error('❌ Cannot send move: gameId missing');
             return;
         }
         
+        console.log(`♟️ Mouvement V4 - ${player}P${piece} ${oldPosition}→${newPosition}`);
         this.socket.emit('move-piece', {
             gameId: this.gameId,
             player,
@@ -85,25 +101,39 @@ export class OnlineManager {
     }
 
     connect() {
-        // Connexion établie automatiquement par le constructeur
+        console.log('🔌 Connexion V4...');
+    }
+
+    disconnect() {
+        if (this.socket) {
+            this.socket.disconnect();
+            console.log('🔌 Déconnexion V4');
+        }
     }
 
     setupSocketListeners() {
         this.socket.on('connect', () => {
-            console.log('Connected to server');
+            console.log('✅ Connecté au serveur V4');
         });
 
-        this.socket.on('disconnect', () => {
-            console.warn('Disconnected from server');
+        this.socket.on('disconnect', (reason) => {
+            console.warn('❌ Déconnecté V4:', reason);
+        });
+
+        this.socket.on('connect_error', (error) => {
+            console.error('🔌 Erreur connexion V4:', error.message);
+            setTimeout(() => {
+                console.log('🔄 Reconnexion V4...');
+                this.socket.connect();
+            }, 2000);
         });
 
         this.socket.on('error', (error) => {
-            console.error('Socket error:', error.message);
+            console.error('💥 Erreur Socket V4:', error.message);
         });
 
-        // Gestion de la resynchronisation
         this.socket.on('position_mismatch', (data) => {
-            console.warn('Position mismatch received');
+            console.warn('🔄 Resync V4:', data);
             this.socket.emit('request_game_state', {
                 gameId: this.gameId,
                 playerId: this.playerId
@@ -111,63 +141,76 @@ export class OnlineManager {
         });
 
         this.socket.on('game_state', (data) => {
+            console.log('📡 État jeu V4 reçu');
             if (window.onlineLudoGame && window.onlineLudoGame.resyncWithServer) {
                 window.onlineLudoGame.resyncWithServer(data.gameState);
             }
         });
 
         this.socket.on('game-created', (data) => {
+            console.log('🎉 Partie créée V4:', data);
             this.setPlayerId(data.player);
             this.setGameId(data.gameId);
             if (window.handleGameCreated) window.handleGameCreated(data);
         });
 
+        this.socket.on('player-role-assigned', (data) => {
+            console.log('🎭 Rôle attribué V4:', data.role);
+            this.setPlayerId(data.role);
+        });
+
         this.socket.on('game-ready', (data) => {
-            // Le rôle est maintenant attribué par le serveur
-            // via l'événement 'game-created' ou dans les données de 'game-ready'
+            console.log('🚀 Partie prête V4');
             if (window.handleGameReady) window.handleGameReady(data);
         });
 
         this.socket.on('spectate-mode', (data) => {
+            console.log('👁️ Spectateur V4 activé');
             if (window.handleSpectateMode) window.handleSpectateMode(data);
         });
 
         this.socket.on('spectators-count', (data) => {
+            console.log(`👥 Spectateurs V4: ${data.count}`);
             if (window.handleSpectatorsUpdate) window.handleSpectatorsUpdate(data);
         });
 
         this.socket.on('spectator-move', (data) => {
+            console.log('♟️ Mouvement spectateur V4');
             if (window.handleSpectatorMove) window.handleSpectatorMove(data);
         });
 
         this.socket.on('dice-rolled', (data) => {
+            console.log(`🎲 Dé V4: ${data.value} par ${data.player}`);
             if (window.handleDiceResult) window.handleDiceResult(data);
         });
 
         this.socket.on('piece-moved', (data) => {
+            console.log('♟️ Pièce V4 déplacée');
             if (window.handlePieceMoved) window.handlePieceMoved(data);
         });
 
         this.socket.on('turn-changed', (currentPlayer) => {
+            console.log(`🔄 Tour V4: ${currentPlayer}`);
             if (window.handleTurnChanged) window.handleTurnChanged(currentPlayer);
         });
 
         this.socket.on('player-joined', (data) => {
+            console.log('👤 Joueur V4 rejoint:', data);
             if (window.handlePlayerJoined) window.handlePlayerJoined(data);
         });
 
+        this.socket.on('player-left', (data) => {
+            console.log('🚪 Joueur V4 parti:', data);
+            if (window.handlePlayerLeft) window.handlePlayerLeft(data);
+        });
+
         this.socket.on('game-winner', (data) => {
+            console.log('🏆 Vainqueur V4:', data);
             if (window.handleGameWinner) {
                 window.handleGameWinner(data);
             } else {
-                console.error('window.handleGameWinner is not defined');
+                console.error('❌ window.handleGameWinner V4 non défini');
             }
         });
-
-        // Événement pour l'attribution du rôle lors du join
-        this.socket.on('player-role-assigned', (data) => {
-            console.log('Player role assigned:', data.role);
-            this.setPlayerId(data.role);
-        });
     }
-}
+}     
