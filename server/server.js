@@ -401,17 +401,19 @@ io.on('connection', (socket) => {
 
 // ===== START SERVER =====
 
-server.listen(PORT, HOSTNAME, () => {
+const bindHost = process.env.RENDER ? '0.0.0.0' : (process.env.SERVER_HOST || 'localhost');
+const port = process.env.PORT || 3000;
+
+server.listen(port, bindHost, () => {
     console.log('🚀 LudoLayone Server démarré !');
     console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`🌐 URL: http://${HOSTNAME}:${PORT}`);
+    console.log(`🌐 URL: http://${bindHost}:${port}`);
     console.log(`🎮 Versions disponibles:`);
-    console.log(`   - Version 2: http://${HOSTNAME}:${PORT}/v2`);
-    console.log(`   - Version 3: http://${HOSTNAME}:${PORT}/v3`);
-    console.log(`   - Version 4: http://${HOSTNAME}:${PORT}/v4`);
-    console.log(`❤️  Health check: http://${HOSTNAME}:${PORT}/health`);
+    console.log(`   - Version 2: http://${bindHost}:${port}/v2`);
+    console.log(`   - Version 3: http://${bindHost}:${port}/v3`);
+    console.log(`   - Version 4: http://${bindHost}:${port}/v4`);
+    console.log(`❤️  Health check: http://${bindHost}:${port}/health`);
     
-    // ✅ Log supplémentaire pour Render
     if (process.env.RENDER) {
         console.log('🎯 Déployé sur Render.com');
         console.log(`🔗 URL publique: https://ludolayone.onrender.com`);
