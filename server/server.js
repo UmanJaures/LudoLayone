@@ -401,38 +401,19 @@ io.on('connection', (socket) => {
 
 // ===== START SERVER =====
 
-import fs from 'fs';
-import http from 'http';
-import https from 'https';
-import { USE_HTTPS, HTTPS_KEY, HTTPS_CERT } from './config.js';
-
-// 🔹 Si HTTPS est activé et que les fichiers existent localement
-let mainServer;
-if (USE_HTTPS && fs.existsSync(HTTPS_KEY) && fs.existsSync(HTTPS_CERT)) {
-    const options = {
-        key: fs.readFileSync(HTTPS_KEY),
-        cert: fs.readFileSync(HTTPS_CERT)
-    };
-    mainServer = https.createServer(options, app);
-    console.log('✅ Serveur HTTPS activé');
-} else {
-    mainServer = http.createServer(app);
-    console.log('⚠️ Serveur HTTP utilisé (Render ou HTTPS non configuré)');
-}
-
-// 🔹 Utiliser le port dynamique imposé par Render, sinon fallback sur config.js
-const port = process.env.PORT || PORT || 3000;
-
-// 🔹 Démarrage du serveur
-mainServer.listen(port, () => {
-    console.log(`🎮 Serveur Ludo multi-versions démarré sur le port ${port}`);
-    console.log(`🏠 Page d'accueil: http://localhost:${port}/`);
-    console.log(`📊 Versions supportées: 2, 3 et 4 joueurs`);
-    console.log(`🎯 Accès direct aux versions:`);
-    console.log(`   - Version 2 joueurs: http://localhost:${port}/v2`);
-    console.log(`   - Version 3 joueurs: http://localhost:${port}/v3`);
-    console.log(`   - Version 4 joueurs: http://localhost:${port}/v4`);
+server.listen(PORT, HOSTNAME, () => {
+    console.log('🚀 LudoLayone Server démarré !');
+    console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🌐 URL: http://${HOSTNAME}:${PORT}`);
+    console.log(`🎮 Versions disponibles:`);
+    console.log(`   - Version 2: http://${HOSTNAME}:${PORT}/v2`);
+    console.log(`   - Version 3: http://${HOSTNAME}:${PORT}/v3`);
+    console.log(`   - Version 4: http://${HOSTNAME}:${PORT}/v4`);
+    console.log(`❤️  Health check: http://${HOSTNAME}:${PORT}/health`);
+    
+    // ✅ Log supplémentaire pour Render
+    if (process.env.RENDER) {
+        console.log('🎯 Déployé sur Render.com');
+        console.log(`🔗 URL publique: https://ludolayone.onrender.com`);
+    }
 });
-
-// 🔹 Attacher Socket.IO sur le serveur final (mainServer)
-io.attach(mainServer);
