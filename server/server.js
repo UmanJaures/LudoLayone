@@ -1,6 +1,6 @@
 /**
  * Serveur Ludo en Ligne - Version modulaire multi-versions
- * ADAPTÉ POUR LA VERSION 4 JOUEURS
+ * MODIFIÉ POUR ENVOYER LES NOMS DES JOUEURS
  */
 
 import express from 'express';
@@ -85,7 +85,20 @@ io.on('connection', (socket) => {
             players.set(socket.id, { gameId, role: player.role });
 
             socket.join(gameId + '_players');
-            socket.emit('game-created', { gameId, player: player.role, gameMode });
+
+            // ✅ CORRECTION : Envoyer le nom du joueur avec l'événement game-created
+            socket.emit('game-created', {
+                gameId,
+                player: player.role,
+                playerName: playerName, // ✅ AJOUT
+                gameMode
+            });
+
+            // ✅ CORRECTION : Émettre aussi player-joined pour le créateur (P1) aux spectateurs
+            io.to(gameId + '_spectators').emit('player-joined', {
+                role: player.role,
+                name: playerName
+            });
 
             console.log('Game created:', { gameId, gameMode, player: playerName });
         } catch (error) {
@@ -108,12 +121,31 @@ io.on('connection', (socket) => {
             players.set(socket.id, { gameId, role: player.role });
             socket.join(gameId + '_players');
 
-            // Notifier tous les joueurs
-            io.to(gameId + '_players').emit('player-joined', player);
-            
+            // ✅ CORRECTION : Envoyer les données dans le format attendu par le client
+            const playerData = {
+                role: player.role,
+                name: playerName
+            };
+
+            io.to(gameId + '_players').emit('player-joined', playerData);
+            io.to(gameId + '_spectators').emit('player-joined', playerData); // ✅ AJOUT : Pour les spectateurs
+
             // Si la partie est complète, envoyer l'événement 'game-ready'
             if (game.players.length === game.gameMode.TOTAL_PLAYERS) {
-                io.to(gameId + '_players').emit('game-ready', game.getClientData());
+                const clientData = game.getClientData();
+                io.to(gameId + '_players').emit('game-ready', clientData);
+                io.to(gameId + '_spectators').emit('game-ready', clientData); // ✅ AJOUT : Pour les spectateurs
+
+                // ✅ AJOUT : Émettre le tour initial avec le nom
+                const initialPlayerName = game.getPlayerNameByRole(game.currentTurn);
+                io.to(gameId + '_players').emit('turn-changed', {
+                    playerId: game.currentTurn,
+                    playerName: initialPlayerName
+                });
+                io.to(gameId + '_spectators').emit('turn-changed', {
+                    playerId: game.currentTurn,
+                    playerName: initialPlayerName
+                });
             }
 
             console.log('Player joined:', { gameId, player: playerName });
@@ -136,6 +168,7 @@ io.on('connection', (socket) => {
         spectators.set(socket.id, { gameId, name: spectatorName });
         socket.join(gameId + '_spectators');
 
+        // ✅ CORRECTION SIMPLIFIÉE : Envoyer UNIQUEMENT spectate-mode
         socket.emit('spectate-mode', game.getClientData());
 
         console.log('Spectator joined:', { gameId, spectator: spectatorName });
@@ -196,8 +229,17 @@ io.on('connection', (socket) => {
             // ✅ CORRECTION : Utiliser la liste des joueurs actifs pour le passage de tour
             const activePlayerRoles = game.players.map(p => p.role);
             game.currentTurn = game.gameMode.getNextPlayer(player, game.lastDiceValue, false, activePlayerRoles);
-            io.to(gameId + '_players').emit('turn-changed', game.currentTurn);
-            io.to(gameId + '_spectators').emit('turn-changed', game.currentTurn);
+
+            // ✅ CORRECTION CRITIQUE : Envoyer le nom du joueur avec le tour
+            const nextPlayerName = game.getPlayerNameByRole(game.currentTurn);
+            io.to(gameId + '_players').emit('turn-changed', {
+                playerId: game.currentTurn,
+                playerName: nextPlayerName
+            });
+            io.to(gameId + '_spectators').emit('turn-changed', {
+                playerId: game.currentTurn,
+                playerName: nextPlayerName
+            });
             return;
         }
 
@@ -249,7 +291,7 @@ io.on('connection', (socket) => {
                 winnerName,
                 winType: 'normal'
             });
-            
+
             io.to(gameId + '_spectators').emit('game-winner', {
                 winner,
                 winnerName,
@@ -258,11 +300,20 @@ io.on('connection', (socket) => {
         } else {
             // ✅ CORRECTION : Utiliser la liste des joueurs actifs pour le passage de tour
             const activePlayerRoles = game.players.map(p => p.role);
-            
+
             // Changer de tour
             game.currentTurn = game.gameMode.getNextPlayer(player, game.lastDiceValue, true, activePlayerRoles);
-            io.to(gameId + '_players').emit('turn-changed', game.currentTurn);
-            io.to(gameId + '_spectators').emit('turn-changed', game.currentTurn);
+
+            // ✅ CORRECTION CRITIQUE : Envoyer le nom du joueur avec le tour
+            const nextPlayerName = game.getPlayerNameByRole(game.currentTurn);
+            io.to(gameId + '_players').emit('turn-changed', {
+                playerId: game.currentTurn,
+                playerName: nextPlayerName
+            });
+            io.to(gameId + '_spectators').emit('turn-changed', {
+                playerId: game.currentTurn,
+                playerName: nextPlayerName
+            });
         }
 
         console.log('Piece moved:', { gameId, player, piece, from: oldPosition, to: newPosition });
@@ -278,13 +329,13 @@ io.on('connection', (socket) => {
             if (game) {
                 const playerRole = playerData.role;
                 const playerName = game.getPlayerNameByRole(playerRole);
-                
+
                 // ✅ CORRECTION : Sauvegarder si c'était le tour du joueur AVANT de le retirer
                 const wasCurrentTurn = (game.currentTurn === playerRole);
-                
+
                 // Retirer le joueur
                 game.removeUser(socket.id);
-                
+
                 // ✅ CORRECTION UNIFIÉE : LOGIQUE SIMPLIFIÉE POUR TOUS LES MODES
                 // Si il ne reste qu'un seul joueur, il gagne par abandon
                 const abandonWinner = (game.players.length === 1) ? game.players[0].role : null;
@@ -296,16 +347,16 @@ io.on('connection', (socket) => {
                     remainingPlayers: game.players.length,
                     wasCurrentTurn: wasCurrentTurn
                 });
-                
+
                 io.to(playerData.gameId + '_spectators').emit('player-left', {
-                    playerRole: playerRole, 
+                    playerRole: playerRole,
                     playerName: playerName,
                     remainingPlayers: game.players.length,
                     wasCurrentTurn: wasCurrentTurn
                 });
 
-                console.log('Player left game:', { 
-                    gameId: playerData.gameId, 
+                console.log('Player left game:', {
+                    gameId: playerData.gameId,
                     player: playerRole,
                     playerName: playerName,
                     remainingPlayers: game.players.length,
@@ -315,12 +366,12 @@ io.on('connection', (socket) => {
                 // ✅ CORRECTION UNIFIÉE : Gestion de la victoire par abandon POUR TOUS LES MODES
                 if (abandonWinner) {
                     const winnerName = game.getPlayerNameByRole(abandonWinner);
-                    
-                    console.log('🎉 Auto-winning by abandon:', { 
-                        gameId: playerData.gameId, 
+
+                    console.log('🎉 Auto-winning by abandon:', {
+                        gameId: playerData.gameId,
                         winner: abandonWinner,
                         winnerName: winnerName,
-                        remainingPlayers: game.players.length 
+                        remainingPlayers: game.players.length
                     });
 
                     // Émettre l'événement de victoire
@@ -361,21 +412,28 @@ io.on('connection', (socket) => {
                             previousPlayer: playerRole,
                             remainingPlayers: game.players.map(p => p.role)
                         });
-                        
+
                         // ✅ CORRECTION CRITIQUE : Passer la liste des joueurs actifs (ceux qui sont encore dans la partie)
                         const activePlayerRoles = game.players.map(p => p.role);
-                        
+
                         game.currentTurn = game.gameMode.getNextPlayer(
-                            playerRole, 
-                            game.lastDiceValue, 
-                            false, 
+                            playerRole,
+                            game.lastDiceValue,
+                            false,
                             activePlayerRoles
                         );
-                        
-                        // Notifier du changement de tour
-                        io.to(playerData.gameId + '_players').emit('turn-changed', game.currentTurn);
-                        io.to(playerData.gameId + '_spectators').emit('turn-changed', game.currentTurn);
-                        
+
+                        // ✅ CORRECTION CRITIQUE : Envoyer le nom du joueur avec le tour
+                        const nextPlayerName = game.getPlayerNameByRole(game.currentTurn);
+                        io.to(playerData.gameId + '_players').emit('turn-changed', {
+                            playerId: game.currentTurn,
+                            playerName: nextPlayerName
+                        });
+                        io.to(playerData.gameId + '_spectators').emit('turn-changed', {
+                            playerId: game.currentTurn,
+                            playerName: nextPlayerName
+                        });
+
                         console.log('Turn automatically passed after disconnect:', {
                             gameId: playerData.gameId,
                             previousPlayer: playerRole,

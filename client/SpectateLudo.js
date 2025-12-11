@@ -23,6 +23,12 @@ export class SpectateLudo {
             P2: []
         };
 
+        // ✅ AJOUT : Stocker les noms des joueurs
+        this.playerNames = {
+            P1: null,
+            P2: null
+        };
+
         // ✅ AJOUT : Stocker l'état des joueurs actifs
         this.activePlayers = {
             P1: true,
@@ -41,9 +47,9 @@ export class SpectateLudo {
         window.handleSpectatorsUpdate = this.handleSpectatorsUpdate.bind(this);
         window.handleSpectatorMove = this.handleSpectatorMove.bind(this);
         window.handleDiceResult = this.handleDiceResult.bind(this);
-        window.handleTurnChange = this.handleTurnChange.bind(this);
-        window.handlePlayerLeft = this.handlePlayerLeft.bind(this); // ✅ AJOUT
-        window.handleGameWinner = this.handleGameWinner.bind(this); // ✅ AJOUT
+        window.handleTurnChanged = this.handleTurnChanged.bind(this); // ✅ CHANGEMENT: handleTurnChanged
+        window.handlePlayerLeft = this.handlePlayerLeft.bind(this);
+        window.handleGameWinner = this.handleGameWinner.bind(this);
 
         console.log(`👁️ Spectateur prêt à regarder la partie`);
         this.isInitialized = true;
@@ -88,7 +94,7 @@ export class SpectateLudo {
         }, 500);
     }
 
-    // ✅ NOUVEAU: Reçoit le snapshot initial de la partie
+    // ✅ MODIFICATION : Reçoit le snapshot initial de la partie avec noms
     handleSpectateMode(data) {
         log('👁️ Mode spectateur initialisé avec snapshot');
         
@@ -97,8 +103,22 @@ export class SpectateLudo {
         this.currentTurn = data.currentTurn;
         this.currentPositions = { ...data.positions };
 
+        // ✅ AJOUT : Stocker les noms des joueurs depuis le snapshot
+        if (data.players && Array.isArray(data.players)) {
+            data.players.forEach(player => {
+                if (player.role && player.name) {
+                    this.playerNames[player.role] = player.name;
+                }
+            });
+            log(`📝 Noms des joueurs stockés depuis spectate-mode:`, this.playerNames);
+        }
+
         // Initialiser le plateau avec les positions reçues
         this.updateBoardFromSnapshot(data.positions);
+
+        // ✅ AJOUT : Mettre à jour l'affichage du tour initial avec le nom
+        const initialPlayerName = this.playerNames[this.currentTurn] || this.currentTurn;
+        UI.setTurn(this.currentTurn, initialPlayerName);
 
         console.log(`👁️ Jeu d'observation démarré pour ${this.gameId}`);
     }
@@ -185,15 +205,27 @@ export class SpectateLudo {
         UI.setDiceValue(data.value);
     }
 
-    // ✅ Changement de tour
-    handleTurnChange(currentPlayer) {
-        log(`🔄 Tour changé: ${currentPlayer}`);
+    // ✅ MODIFICATION CRITIQUE : Changement de tour avec gestion des noms
+    handleTurnChanged(data) {
+        // ✅ CORRECTION : Le serveur envoie maintenant un objet avec playerId et playerName
+        let currentPlayer, playerName;
+        
+        if (typeof data === 'string') {
+            // Format ancien (rétrocompatibilité)
+            currentPlayer = data;
+            playerName = this.playerNames[currentPlayer] || currentPlayer;
+        } else {
+            // Format nouveau avec objet
+            currentPlayer = data.playerId;
+            playerName = data.playerName || this.playerNames[currentPlayer] || currentPlayer;
+        }
+        
+        log(`🔄 Tour changé: ${currentPlayer} (${playerName})`);
 
         if (this.gameEnded) return;
 
         this.currentTurn = currentPlayer;
-        const turnIndex = currentPlayer === 'P1' ? 0 : 1;
-        UI.setTurn(turnIndex);
+        UI.setTurn(currentPlayer, playerName);
     }
 
     // ✅ Mettre à jour la liste des spectateurs

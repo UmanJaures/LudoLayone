@@ -61,7 +61,9 @@ export class OnlineLudo {
         window.handleTurnChanged = this.handleTurnChange.bind(this);
         window.handleGameReady = this.handleGameReady.bind(this);
         window.handleGameWinner = this.handleGameWinner.bind(this);
-        window.handlePlayerLeft = this.handlePlayerLeft.bind(this); // ✅ AJOUT
+        window.handlePlayerLeft = this.handlePlayerLeft.bind(this);
+        window.handleGameCreated = this.handleGameCreated.bind(this); // ✅ AJOUT
+        window.handlePlayerJoined = this.handlePlayerJoined.bind(this); // ✅ AJOUT
 
         this.resetUI();
         this.isInitialized = true;
@@ -70,23 +72,69 @@ export class OnlineLudo {
     }
 
     /**
+     * ✅ NOUVELLE MÉTHODE : Gérer la création de jeu
+     */
+    handleGameCreated(data) {
+        clientLogger.debug('OnlineLudo', 'Game created event', data);
+        
+        // Stocker le nom du joueur qui a créé la partie
+        if (data.player && data.gameId) {
+            // Le joueur qui crée la partie est P1
+            this.playerNames.P1 = data.playerName || data.player;
+            clientLogger.debug('OnlineLudo', 'P1 name stored from game creation', { 
+                P1: this.playerNames.P1 
+            });
+            
+            // ✅ AJOUT : Mettre à jour immédiatement l'affichage si c'est notre tour
+            if (this.playerRole === 'P1') {
+                UI.setTurn('P1', this.playerNames.P1);
+            }
+        }
+    }
+
+    /**
+     * ✅ NOUVELLE MÉTHODE : Gérer l'arrivée d'un joueur
+     */
+    handlePlayerJoined(data) {
+        clientLogger.debug('OnlineLudo', 'Player joined event', data);
+        
+        // Stocker le nom du joueur qui rejoint
+        if (data.role && data.name) {
+            this.playerNames[data.role] = data.name;
+            clientLogger.debug('OnlineLudo', 'Player name stored from join', { 
+                role: data.role, 
+                name: data.name,
+                allNames: this.playerNames 
+            });
+            
+            // ✅ AJOUT : Mettre à jour immédiatement l'affichage si c'est notre tour
+            if (this.playerRole === data.role) {
+                UI.setTurn(data.role, data.name);
+            }
+        } else {
+            // Fallback: si les données arrivent dans un format différent
+            clientLogger.warn('OnlineLudo', 'Unexpected player-joined data format', data);
+        }
+    }
+
+    /**
      * ✅ NOUVELLE MÉTHODE : Gérer le départ d'un joueur
      */
     handlePlayerLeft(data) {
         clientLogger.debug('OnlineLudo', 'Player left handled', data);
-        
+
         // Marquer le joueur comme inactif
         this.activePlayers[data.playerRole] = false;
-        
+
         // Cacher ou désactiver les pions du joueur qui a quitté
         this.hidePlayerPieces(data.playerRole);
-        
+
         // ✅ AJOUT : Si c'était le tour du joueur qui a quitté, on s'attend à un changement de tour automatique
         if (data.wasCurrentTurn) {
             clientLogger.debug('OnlineLudo', 'Waiting for automatic turn change after player left');
             // Le serveur devrait émettre un événement 'turn-changed' automatiquement
         }
-        
+
         clientLogger.debug('OnlineLudo', 'Game continues with remaining players', {
             activePlayers: this.activePlayers,
             remaining: data.remainingPlayers,
@@ -104,12 +152,12 @@ export class OnlineLudo {
                 pieceElement.style.opacity = '0.3';
                 pieceElement.style.pointerEvents = 'none';
                 pieceElement.title = `${playerRole} a quitté la partie`;
-                
+
                 // ✅ AJOUT : Ajouter une classe CSS pour un style spécifique
                 pieceElement.classList.add('player-left');
             }
         });
-        
+
         // ✅ AJOUT : Mettre à jour visuellement le statut du joueur
         this.updatePlayerStatusDisplay(playerRole, false);
     }
@@ -120,14 +168,14 @@ export class OnlineLudo {
     updatePlayerStatusDisplay(playerRole, isActive) {
         // Vous pouvez ajouter ici une logique pour mettre à jour l'UI
         // Par exemple, mettre à jour un indicateur visuel que le joueur a quitté
-        clientLogger.debug('OnlineLudo', 'Player status updated', { 
-            player: playerRole, 
-            active: isActive 
+        clientLogger.debug('OnlineLudo', 'Player status updated', {
+            player: playerRole,
+            active: isActive
         });
     }
 
     /**
-     * ✅ NOUVELLE MÉTHODE : Gérer l'événement de victoire du serveur
+     * ✅ MODIFICATION : Gérer l'événement de victoire du serveur
      * @private
      */
     handleGameWinner(data) {
@@ -140,19 +188,19 @@ export class OnlineLudo {
 
         this.gameEnded = true;
         this.stopTurnTimer();
-        
+
         const isCurrentPlayer = this.playerRole === data.winner;
         const winnerName = data.winnerName || this.playerNames[data.winner] || data.winner;
         const winType = data.winType || 'normal'; // ✅ AJOUT : Type de victoire
-        
-        clientLogger.debug('OnlineLudo', 'Displaying winner popup', { 
-            winnerName, 
+
+        clientLogger.debug('OnlineLudo', 'Displaying winner popup', {
+            winnerName,
             isCurrentPlayer,
             winner: data.winner,
             playerRole: this.playerRole,
             winType // ✅ AJOUT
         });
-        
+
         // ✅ AJOUT : Message spécial pour victoire par abandon
         let message;
         if (winType === 'abandon') {
@@ -168,7 +216,7 @@ export class OnlineLudo {
                 message = `${winnerName} a gagné la partie ! 🏆`;
             }
         }
-        
+
         UI.showWinnerPopup(winnerName, isCurrentPlayer, message); // ✅ MODIFICATION
         this.disableMyTurn();
         UI.disableDice();
@@ -176,20 +224,32 @@ export class OnlineLudo {
     }
 
     /**
-     * Gérer le signal "game-ready" du serveur
+     * ✅ MODIFICATION : Gérer le signal "game-ready" du serveur avec noms
      * @private
      */
     handleGameReady(data) {
         clientLogger.debug('OnlineLudo', 'Game ready received', data);
-        
-        // ✅ AJOUT : Stocker les noms des joueurs
+
+        // ✅ CORRECTION AMÉLIORÉE : Stocker les noms des joueurs de multiple sources
         if (data.players && Array.isArray(data.players)) {
             data.players.forEach(player => {
                 if (player.role && player.name) {
                     this.playerNames[player.role] = player.name;
                 }
             });
-            clientLogger.debug('OnlineLudo', 'Player names stored', this.playerNames);
+            
+            clientLogger.debug('OnlineLudo', 'Player names stored from game-ready', { 
+                names: this.playerNames,
+                receivedData: data.players 
+            });
+            
+            // ✅ AJOUT : Mettre à jour immédiatement l'affichage du tour actuel
+            if (data.currentTurn) {
+                const playerName = this.playerNames[data.currentTurn] || data.currentTurn;
+                UI.setTurn(data.currentTurn, playerName);
+            }
+        } else {
+            clientLogger.warn('OnlineLudo', 'No player data received in game-ready', data);
         }
     }
 
@@ -219,8 +279,8 @@ export class OnlineLudo {
      * @private
      */
     handleRemoteMove(data) {
-        clientLogger.debug('OnlineLudo', 'Remote move', { 
-            player: data.player, 
+        clientLogger.debug('OnlineLudo', 'Remote move', {
+            player: data.player,
             piece: data.piece,
             newPosition: data.newPosition,
             captured: data.captured
@@ -284,7 +344,7 @@ export class OnlineLudo {
         clientLogger.debug('OnlineLudo', 'Capture from server', captureData);
 
         const { player, piece, fromPosition, toPosition } = captureData;
-        
+
         // Mettre à jour la position du pion capturé
         this.currentPositions[player][piece] = toPosition;
 
@@ -306,11 +366,11 @@ export class OnlineLudo {
 
             this.gameEnded = true;
             this.stopTurnTimer();
-            
+
             // ✅ MODIFICATION : Passer le nom du joueur au lieu du role
             const winnerName = this.playerNames[player] || player;
             const isCurrentPlayer = this.playerRole === player;
-            
+
             UI.showWinnerPopup(winnerName, isCurrentPlayer);
             this.disableMyTurn();
             UI.disableDice();
@@ -355,17 +415,40 @@ export class OnlineLudo {
     }
 
     /**
-     * Gérer le changement de tour
+     * ✅ MODIFICATION CRITIQUE : Gérer le changement de tour avec noms
      * @private
      */
-    handleTurnChange(currentPlayer) {
-        clientLogger.debug('OnlineLudo', 'Turn changed', { player: currentPlayer });
+    handleTurnChange(data) {
+        // ✅ CORRECTION : Le serveur envoie maintenant un objet avec playerId et playerName
+        let currentPlayer, playerName;
+        
+        if (typeof data === 'string') {
+            // Format ancien (rétrocompatibilité)
+            currentPlayer = data;
+            playerName = this.playerNames[currentPlayer] || currentPlayer;
+        } else {
+            // Format nouveau avec objet
+            currentPlayer = data.playerId;
+            playerName = data.playerName || this.playerNames[currentPlayer] || currentPlayer;
+        }
+        
+        clientLogger.debug('OnlineLudo', 'Turn changed', { 
+            receivedData: data,
+            currentPlayer: currentPlayer,
+            playerName: playerName,
+            playerNames: this.playerNames
+        });
 
         if (!this.isInitialized || this.gameEnded) return;
 
         this.isMyTurn = (currentPlayer === this.playerRole);
-        const turnIndex = currentPlayer === 'P1' ? 0 : 1;
-        UI.setTurn(turnIndex);
+        
+        clientLogger.debug('OnlineLudo', 'Setting turn display', {
+            playerId: currentPlayer,
+            playerName: playerName
+        });
+        
+        UI.setTurn(currentPlayer, playerName);
 
         if (this.isMyTurn) {
             this.enableMyTurn();
@@ -451,7 +534,7 @@ export class OnlineLudo {
             }
         } else {
             newPosition = this.getIncrementedPosition(player, piece, this._diceValue);
-            
+
             if (newPosition === currentPosition) {
                 clientLogger.warn('OnlineLudo', 'Invalid move - position unchanged');
                 return;
@@ -477,7 +560,7 @@ export class OnlineLudo {
 
         // Envoyer le mouvement au serveur
         this.onlineManager.sendPieceMove(player, piece, newPosition, currentPosition, willCapture);
-        
+
         this.stopTurnTimer();
 
         clientLogger.debug('OnlineLudo', 'Move sent to server');
