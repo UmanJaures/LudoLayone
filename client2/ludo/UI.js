@@ -5,7 +5,7 @@ const playerPiecesElements = {
     P1: document.querySelectorAll('[player-id="P1"].player-piece'),
     P2: document.querySelectorAll('[player-id="P2"].player-piece'),
     P3: document.querySelectorAll('[player-id="P3"].player-piece'),
-    P4: document.querySelectorAll('[player-id="P4"].player-piece'), // ✅ NOUVEAU : Ajout du joueur P4
+    P4: document.querySelectorAll('[player-id="P4"].player-piece'), // ✅ P4 présent
 };
 
 const positionMap = new Map();
@@ -260,8 +260,9 @@ export class UI {
 
         piecesAtPosition.push({ player, piece, element: pieceElement });
 
-        const activePlayerSpan = document.querySelector('.active-player span');
-        const currentPlayer = activePlayerSpan ? activePlayerSpan.innerText : null;
+        // ✅ CORRECTION : Récupérer l'ID du joueur actif depuis la base highlightée
+        const activePlayerBase = document.querySelector('.player-base.highlight');
+        const currentPlayer = activePlayerBase ? activePlayerBase.getAttribute('player-id') : null;
 
         piecesAtPosition.sort((a, b) => {
             if ((a.player === currentPlayer && b.player === currentPlayer) ||
@@ -279,34 +280,41 @@ export class UI {
         });
     }
 
-    static setTurn(index) {
-        if (index < 0 || index >= PLAYERS.length) {
-            console.error('Index out of bound!');
+    // ✅ MODIFICATION CRITIQUE : MÉTHODE setTurn MISE À JOUR (version avec noms)
+    static setTurn(playerId, playerName) {
+        if (!PLAYERS.includes(playerId)) {
+            console.error('Player ID not found!');
             return;
         }
 
-        const player = PLAYERS[index];
-        document.querySelector('.active-player span').innerText = player;
+        console.log('🔄 UI.setTurn called with:', { playerId, playerName });
+
+        // ✅ Afficher le nom du joueur au lieu de l'ID
+        const activePlayerSpan = document.querySelector('.active-player span');
+        if (activePlayerSpan) {
+            activePlayerSpan.innerText = playerName;
+            console.log('✅ Active player span updated to:', playerName);
+        }
 
         const activePlayerBase = document.querySelector('.player-base.highlight');
         if (activePlayerBase) {
             activePlayerBase.classList.remove('highlight');
         }
 
-        document.querySelector(`[player-id="${player}"].player-base`).classList.add('highlight');
-        this.bringCurrentPlayerPiecesToFront(player);
+        document.querySelector(`[player-id="${playerId}"].player-base`).classList.add('highlight');
+        this.bringCurrentPlayerPiecesToFront(playerId);
     }
 
-    static bringCurrentPlayerPiecesToFront(currentPlayer) {
+    static bringCurrentPlayerPiecesToFront(currentPlayerId) {
         positionMap.forEach(piecesAtPosition => {
             piecesAtPosition.sort((a, b) => {
-                if (a.player === currentPlayer && b.player !== currentPlayer) return 1;
-                if (a.player !== currentPlayer && b.player === currentPlayer) return -1;
+                if (a.player === currentPlayerId && b.player !== currentPlayerId) return 1;
+                if (a.player !== currentPlayerId && b.player === currentPlayerId) return -1;
                 return 0;
             });
 
             piecesAtPosition.forEach((p, index) => {
-                const baseZIndex = p.player === currentPlayer ? 50 : 10;
+                const baseZIndex = p.player === currentPlayerId ? 50 : 10;
                 p.element.style.zIndex = baseZIndex + index;
             });
         });
@@ -321,9 +329,11 @@ export class UI {
     }
 
     static highlightPieces(player, pieces) {
-        const activePlayerSpan = document.querySelector('.active-player span');
-        const currentPlayer = activePlayerSpan ? activePlayerSpan.innerText : player;
-        this.bringCurrentPlayerPiecesToFront(currentPlayer);
+        // ✅ CORRECTION CRITIQUE : Utiliser l'ID du joueur depuis la base highlightée
+        const activePlayerBase = document.querySelector('.player-base.highlight');
+        const currentPlayerId = activePlayerBase ? activePlayerBase.getAttribute('player-id') : player;
+        
+        this.bringCurrentPlayerPiecesToFront(currentPlayerId);
 
         pieces.forEach(piece => {
             const pieceElement = playerPiecesElements[player][piece];
@@ -337,10 +347,11 @@ export class UI {
             ele.classList.remove('highlight');
         });
 
-        const activePlayerSpan = document.querySelector('.active-player span');
-        const currentPlayer = activePlayerSpan ? activePlayerSpan.innerText : null;
-        if (currentPlayer) {
-            this.bringCurrentPlayerPiecesToFront(currentPlayer);
+        // ✅ CORRECTION CRITIQUE : Utiliser l'ID du joueur depuis la base highlightée
+        const activePlayerBase = document.querySelector('.player-base.highlight');
+        const currentPlayerId = activePlayerBase ? activePlayerBase.getAttribute('player-id') : null;
+        if (currentPlayerId) {
+            this.bringCurrentPlayerPiecesToFront(currentPlayerId);
         }
     }
 
@@ -393,69 +404,32 @@ export class UI {
 
     static showWinnerPopup(winnerName, isCurrentPlayer, customMessage = null) {
         const overlay = document.createElement('div');
-        overlay.className = 'winner-popup'; // ✅ UTILISE LA CLASSE CSS
+        overlay.className = 'winner-popup';
 
         const popup = document.createElement('div');
-        // ✅ SUPPRIME tous les styles en ligne qui écrasent le CSS
-        // popup.style.backgroundColor = 'white'; // ❌ SUPPRIMER
-        // popup.style.padding = '2.5rem'; // ❌ SUPPRIMER
-        // popup.style.borderRadius = '20px'; // ❌ SUPPRIMER
-        // popup.style.textAlign = 'center'; // ❌ SUPPRIMER
-        // popup.style.boxShadow = '0 0 40px rgba(255, 255, 255, 0.4)'; // ❌ SUPPRIMER
-        // popup.style.maxWidth = '500px'; // ❌ SUPPRIMER
-        // popup.style.width = '85%'; // ❌ SUPPRIMER
-        // popup.style.border = '3px solid gold'; // ❌ SUPPRIMER
-        // popup.style.background = 'linear-gradient(135deg, #ffffffe6, #ffeaea)'; // ❌ SUPPRIMER
-        // popup.style.animation = 'popupAppear 0.6s ease-out'; // ❌ SUPPRIMER
 
         const title = document.createElement('h2');
         title.textContent = '🎉 Partie Terminée !';
-        // ✅ SUPPRIME les styles en ligne du titre
-        // title.style.color = '#060350'; // ❌ SUPPRIMER
-        // title.style.marginBottom = '1.5rem'; // ❌ SUPPRIMER
-        // title.style.fontSize = '2rem'; // ❌ SUPPRIMER
-        // title.style.fontWeight = 'bold'; // ❌ SUPPRIMER
 
         const message = document.createElement('p');
         if (customMessage) {
             message.innerHTML = customMessage.replace(/\n/g, '<br>');
         } else if (isCurrentPlayer) {
             message.textContent = 'FÉLICITATIONS ! Vous avez gagné la partie ! 🏆';
-            // ✅ SUPPRIME les styles en ligne problématiques
-            // message.style.color = 'white'; // ❌ SUPPRIMER - Ça causait le problème !
         } else {
             message.textContent = `${winnerName} a gagné la partie ! 🏆`;
-            // message.style.color = '#060350'; // ❌ SUPPRIMER
         }
-        // ✅ SUPPRIME les autres styles en ligne
-        // message.style.marginBottom = '2rem'; // ❌ SUPPRIMER
-        // message.style.fontSize = '1.3rem'; // ❌ SUPPRIMER
-        // message.style.lineHeight = '1.5'; // ❌ SUPPRIMER
 
-        // ✅ AJOUT : Classe pour le badge d'abandon si nécessaire
         if (customMessage && customMessage.includes('abandon')) {
             const abandonBadge = document.createElement('div');
             abandonBadge.textContent = '🏃‍♂️ Victoire par Abandon';
-            abandonBadge.className = 'abandon-badge'; // ✅ Utilise une classe CSS
+            abandonBadge.className = 'abandon-badge';
             popup.appendChild(abandonBadge);
         }
 
         const menuButton = document.createElement('button');
         menuButton.textContent = 'Retour au Menu Principal';
-        // ✅ SUPPRIME tous les styles en ligne du bouton
-        // menuButton.style.backgroundColor = '#060350'; // ❌ SUPPRIMER
-        // menuButton.style.color = 'white'; // ❌ SUPPRIMER
-        // menuButton.style.border = 'none'; // ❌ SUPPRIMER
-        // menuButton.style.padding = '15px 30px'; // ❌ SUPPRIMER
-        // menuButton.style.borderRadius = '10px'; // ❌ SUPPRIMER
-        // menuButton.style.fontSize = '1.2rem'; // ❌ SUPPRIMER
-        // menuButton.style.cursor = 'pointer'; // ❌ SUPPRIMER
-        // menuButton.style.transition = 'all 0.3s ease'; // ❌ SUPPRIMER
-        // menuButton.style.marginTop = '1rem'; // ❌ SUPPRIMER
-        // menuButton.style.fontWeight = '600'; // ❌ SUPPRIMER
-        // menuButton.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.2)'; // ❌ SUPPRIMER
 
-        // ✅ Gestion des événements de souris
         menuButton.onmouseover = () => {
             menuButton.style.transform = 'translateY(-3px)';
         };
@@ -482,7 +456,6 @@ export class UI {
 
         document.body.appendChild(overlay);
 
-        // ✅ AJOUT : Style pour le badge d'abandon
         const style = document.createElement('style');
         style.textContent = `
         .abandon-badge {

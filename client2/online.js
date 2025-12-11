@@ -189,9 +189,9 @@ export class OnlineManager {
             if (window.handlePieceMoved) window.handlePieceMoved(data);
         });
 
-        this.socket.on('turn-changed', (currentPlayer) => {
-            console.log(`🔄 Tour V4: ${currentPlayer}`);
-            if (window.handleTurnChanged) window.handleTurnChanged(currentPlayer);
+        this.socket.on('turn-changed', (data) => {
+            console.log(`🔄 Tour V4:`, data);
+            if (window.handleTurnChanged) window.handleTurnChanged(data);
         });
 
         this.socket.on('player-joined', (data) => {
@@ -213,4 +213,4 @@ export class OnlineManager {
             }
         });
     }
-}     
+}    

@@ -147,6 +147,7 @@ export class OnlineManager {
             }
         });
 
+        // ✅ MODIFICATION : Relayer game-created avec toutes les données
         this.socket.on('game-created', (data) => {
             console.log('🎉 Partie créée V3:', data);
             this.setPlayerId(data.player);
@@ -154,9 +155,10 @@ export class OnlineManager {
             if (window.handleGameCreated) window.handleGameCreated(data);
         });
 
-        this.socket.on('player-role-assigned', (data) => {
-            console.log('🎭 Rôle attribué V3:', data.role);
-            this.setPlayerId(data.role);
+        // ✅ MODIFICATION : Relayer player-joined avec toutes les données
+        this.socket.on('player-joined', (data) => {
+            console.log('👤 Joueur V3 rejoint:', data);
+            if (window.handlePlayerJoined) window.handlePlayerJoined(data);
         });
 
         this.socket.on('game-ready', (data) => {
@@ -189,14 +191,10 @@ export class OnlineManager {
             if (window.handlePieceMoved) window.handlePieceMoved(data);
         });
 
-        this.socket.on('turn-changed', (currentPlayer) => {
-            console.log(`🔄 Tour V3: ${currentPlayer}`);
-            if (window.handleTurnChanged) window.handleTurnChanged(currentPlayer);
-        });
-
-        this.socket.on('player-joined', (data) => {
-            console.log('👤 Joueur V3 rejoint:', data);
-            if (window.handlePlayerJoined) window.handlePlayerJoined(data);
+        // ✅ MODIFICATION CRITIQUE : turn-changed peut être un string ou un objet
+        this.socket.on('turn-changed', (data) => {
+            console.log(`🔄 Tour V3:`, data);
+            if (window.handleTurnChanged) window.handleTurnChanged(data);
         });
 
         this.socket.on('player-left', (data) => {

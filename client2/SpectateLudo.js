@@ -22,7 +22,15 @@ export class SpectateLudo {
             P1: [],
             P2: [],
             P3: [],
-            P4: [] // ✅ NOUVEAU : Ajout du joueur P4
+            P4: []
+        };
+
+        // ✅ AJOUT : Stocker les noms des joueurs
+        this.playerNames = {
+            P1: null,
+            P2: null,
+            P3: null,
+            P4: null
         };
 
         // ✅ AJOUT : Stocker l'état des joueurs actifs
@@ -30,7 +38,7 @@ export class SpectateLudo {
             P1: true,
             P2: true,
             P3: true,
-            P4: true // ✅ NOUVEAU : Ajout du joueur P4
+            P4: true
         };
 
         log(`👁️ SpectateLudo créé - Spectateur: ${spectatorName}`);
@@ -45,9 +53,9 @@ export class SpectateLudo {
         window.handleSpectatorsUpdate = this.handleSpectatorsUpdate.bind(this);
         window.handleSpectatorMove = this.handleSpectatorMove.bind(this);
         window.handleDiceResult = this.handleDiceResult.bind(this);
-        window.handleTurnChange = this.handleTurnChange.bind(this);
-        window.handlePlayerLeft = this.handlePlayerLeft.bind(this); // ✅ AJOUT
-        window.handleGameWinner = this.handleGameWinner.bind(this); // ✅ AJOUT
+        window.handleTurnChanged = this.handleTurnChanged.bind(this); // ✅ CHANGEMENT: handleTurnChanged
+        window.handlePlayerLeft = this.handlePlayerLeft.bind(this);
+        window.handleGameWinner = this.handleGameWinner.bind(this);
 
         console.log(`👁️ Spectateur prêt à regarder la partie`);
         this.isInitialized = true;
@@ -92,7 +100,7 @@ export class SpectateLudo {
         }, 500);
     }
 
-    // ✅ NOUVEAU: Reçoit le snapshot initial de la partie
+    // ✅ MODIFICATION : Reçoit le snapshot initial de la partie avec noms
     handleSpectateMode(data) {
         log('👁️ Mode spectateur initialisé avec snapshot');
         
@@ -101,8 +109,22 @@ export class SpectateLudo {
         this.currentTurn = data.currentTurn;
         this.currentPositions = { ...data.positions };
 
+        // ✅ AJOUT : Stocker les noms des joueurs depuis le snapshot
+        if (data.players && Array.isArray(data.players)) {
+            data.players.forEach(player => {
+                if (player.role && player.name) {
+                    this.playerNames[player.role] = player.name;
+                }
+            });
+            log(`📝 Noms des joueurs stockés depuis spectate-mode:`, this.playerNames);
+        }
+
         // Initialiser le plateau avec les positions reçues
         this.updateBoardFromSnapshot(data.positions);
+
+        // ✅ AJOUT : Mettre à jour l'affichage du tour initial avec le nom
+        const initialPlayerName = this.playerNames[this.currentTurn] || this.currentTurn;
+        UI.setTurn(this.currentTurn, initialPlayerName);
 
         console.log(`👁️ Jeu d'observation démarré pour ${this.gameId}`);
     }
@@ -111,7 +133,6 @@ export class SpectateLudo {
     updateBoardFromSnapshot(positions) {
         log('📊 Mise à jour du plateau depuis snapshot');
         
-        // ✅ MODIFICATION : Inclure P4
         ['P1', 'P2', 'P3', 'P4'].forEach(player => {
             positions[player].forEach((position, piece) => {
                 this.currentPositions[player][piece] = position;
@@ -145,7 +166,7 @@ export class SpectateLudo {
             log(`🎉 Victoire: ${winner}`);
             this.gameEnded = true;
             setTimeout(() => {
-                UI.showWinnerPopup(winner, false); // false = spectateur
+                UI.showWinnerPopup(winner, false);
             }, 500);
         }
     }
@@ -173,7 +194,7 @@ export class SpectateLudo {
                     const basePosition = adversary === 'P1' ? [500, 501, 502, 503] : 
                                          adversary === 'P2' ? [600, 601, 602, 603] : 
                                          adversary === 'P3' ? [700, 701, 702, 703] :
-                                         [800, 801, 802, 803]; // ✅ NOUVEAU : Base pour P4
+                                         [800, 801, 802, 803]; // ✅ Base P4
                     const base = basePosition[i];
 
                     this.currentPositions[adversary][i] = base;
@@ -195,16 +216,27 @@ export class SpectateLudo {
         UI.setDiceValue(data.value);
     }
 
-    // ✅ Changement de tour
-    handleTurnChange(currentPlayer) {
-        log(`🔄 Tour changé: ${currentPlayer}`);
+    // ✅ MODIFICATION CRITIQUE : Changement de tour avec gestion des noms
+    handleTurnChanged(data) {
+        // ✅ CORRECTION : Le serveur envoie maintenant un objet avec playerId et playerName
+        let currentPlayer, playerName;
+        
+        if (typeof data === 'string') {
+            // Format ancien (rétrocompatibilité)
+            currentPlayer = data;
+            playerName = this.playerNames[currentPlayer] || currentPlayer;
+        } else {
+            // Format nouveau avec objet
+            currentPlayer = data.playerId;
+            playerName = data.playerName || this.playerNames[currentPlayer] || currentPlayer;
+        }
+        
+        log(`🔄 Tour changé: ${currentPlayer} (${playerName})`);
 
         if (this.gameEnded) return;
 
         this.currentTurn = currentPlayer;
-        // ✅ MODIFICATION : Gérer 4 joueurs pour l'index du tour
-        const turnIndex = currentPlayer === 'P1' ? 0 : currentPlayer === 'P2' ? 1 : currentPlayer === 'P3' ? 2 : 3;
-        UI.setTurn(turnIndex);
+        UI.setTurn(currentPlayer, playerName);
     }
 
     // ✅ Mettre à jour la liste des spectateurs
