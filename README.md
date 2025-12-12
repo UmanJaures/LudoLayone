@@ -1,6 +1,7 @@
 # 🎲 LudoLayone Multiplayer - Jeu de Ludo en Ligne et Local
 
 Un jeu de Ludo moderne et interactif développé en JavaScript, permettant de jouer en ligne ou en local avec 2, 3 et 4 joueurs.
+[![showerludolayone-T.png](https://i.postimg.cc/gkwHZdz3/showerludolayone-T.png)](https://postimg.cc/bsht772v)
 
 ## ✨ Fonctionnalités
 
