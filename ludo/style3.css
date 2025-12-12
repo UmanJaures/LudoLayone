@@ -155,36 +155,43 @@ body::before {
 .player-base {
     width: 40%;
     height: 40%;
-    border: 30px solid;
+    border: none;
     position: absolute;
-    opacity: 0.9;
+    background: transparent !important; /* Assure que l'arrière-plan est transparent */
 }
 
 .player-bases [player-id="P1"].player-base {
     bottom: 0;
     left: 0;
-    border-color: #1295e7;
 }
 
 .player-bases [player-id="P2"].player-base {
     top: 0;
     right: 0;
-    border-color: #049645;
 }
 
 .player-bases [player-id="P3"].player-base {
     bottom: 0;
     right: 0;
-    border-color: #e71212;
 }
 
 .player-base.highlight {
     animation: border-blink 0.7s infinite ease-in-out;
+    border: 10px solid rgba(255, 255, 255, 0.865) !important; /* Bordure blanche semi-transparente */
 }
 
 @keyframes border-blink {
     50% {
         border-color: rgba(255, 255, 255, 0.8);
+    }
+    50% {
+        border-color: rgba(255, 255, 255, 0.9) !important;
+        box-shadow: 0 0 20px rgba(255, 255, 255, 0.7);
+    }
+    100% {
+
+        border-color: rgba(255, 255, 255, 0.3) !important;
+        box-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
     }
 }
 

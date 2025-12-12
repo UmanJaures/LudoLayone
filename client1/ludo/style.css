@@ -339,15 +339,15 @@ body::before {
 
 /* COULEURS DES JOUEURS - ADAPTÉ POUR 3 JOUEURS */
 [player-id="P1"].player-piece {
-    background-color: #2eafff; /* Bleu */
+    background-color: #fff50a; /* Bleu */
 }
 
 [player-id="P2"].player-piece {
-    background-color: #00b550; /* Vert */
+    background-color: #e20000; /* Vert */
 }
 
 [player-id="P3"].player-piece {
-    background-color: #ff6b6b; /* Rouge adapté au style */
+    background-color: #8A00C4; /* Rouge adapté au style */
 }
 
 /* Animation de capture */
@@ -378,35 +378,42 @@ body::before {
 .player-base {
     width: 40%;
     height: 40%;
-    border: clamp(20px, 4vw, 30px) solid;
+    border: none;
     position: absolute;
+    background: transparent !important; /* Assure que l'arrière-plan est transparent */
 }
 
 .player-bases [player-id="P1"].player-base {
     bottom: 0;
     left: 0;
-    border-color: #1295e7; /* Bleu - Bas gauche */
 }
 
 .player-bases [player-id="P2"].player-base {
     top: 0;
     right: 0;
-    border-color: #049645; /* Vert - Haut droit */
 }
 
 .player-bases [player-id="P3"].player-base {
     bottom: 0;
     right: 0;
-    border-color: #ff6b6b; /* Rouge - Bas droit */
 }
 
 .player-base.highlight {
     animation: border-blink 0.7s infinite ease-in-out;
+    border: 4px solid rgba(255, 255, 255, 0.865) !important; /* Bordure blanche semi-transparente */
 }
 
 @keyframes border-blink {
     50% {
         border-color: rgba(255, 255, 255, 0.8);
+    }
+    50% {
+        border-color: rgba(255, 255, 255, 0.9) !important;
+        box-shadow: 0 0 20px rgba(255, 255, 255, 0.7);
+    }
+    100% {
+        border-color: rgba(255, 255, 255, 0.3) !important;
+        box-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
     }
 }
 
